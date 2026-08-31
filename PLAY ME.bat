@@ -46,6 +46,9 @@ echo Python: %PYTHON%
 echo Pasta:  %CD%
 echo.
 
+REM Selenium empacotado neste projeto (sem pip / sem pypi.org)
+set "PYTHONPATH=%CD%\vendor;%PYTHONPATH%"
+
 REM ----- Prepara o .env na primeira execucao -----
 if not exist ".env" (
   if exist ".env.example" (

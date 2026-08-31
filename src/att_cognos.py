@@ -56,26 +56,27 @@ def nome_arquivo_do_job(job: dict) -> str:
 def executar_download(
     somente: list[str] | None = None,
     sem_mover: bool = True,
-) -> None:
-    """Roda o baixar_cognos.py deste proprio projeto."""
+) -> int:
+    """Roda o baixar_cognos.py deste proprio projeto. Retorna o codigo de saida."""
     if not SCRIPT_DOWNLOAD.exists():
         raise SystemExit(f"baixar_cognos.py nao encontrado em {RAIZ_PROJETO}.")
 
     comando = [sys.executable, str(SCRIPT_DOWNLOAD)]
-    if somente:
-        comando += ["--somente", ",".join(somente)]
+    # So filtra quando o usuario pediu uma fonte especifica. Juntar todos os
+    # nomes com virgula quebra no Windows por causa dos parenteses (IRAT.950).
+    if somente and len(somente) == 1:
+        comando += ["--somente", somente[0]]
     if sem_mover:
         comando.append("--sem-mover")
 
     logger.info("Executando download do Planning Analytics: %s", " ".join(comando))
     resultado = subprocess.run(comando, cwd=str(RAIZ_PROJETO))
     if resultado.returncode != 0:
-        # Uma exportacao pode falhar e as demais terem baixado; seguimos.
         logger.warning(
-            "baixar_cognos.py terminou com erro (codigo %d). "
-            "Tentando carregar os arquivos que foram baixados.",
+            "baixar_cognos.py terminou com erro (codigo %d).",
             resultado.returncode,
         )
+    return resultado.returncode
 
 
 def localizar_arquivo(config_cognos: dict, job: dict) -> Path:

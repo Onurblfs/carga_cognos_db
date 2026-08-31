@@ -28,6 +28,12 @@ import time
 from datetime import datetime
 from pathlib import Path
 
+# Copia local do Selenium (pasta vendor/). A rede da Claro bloqueia o pypi.org,
+# entao o projeto nao depende de pip install selenium.
+_VENDOR = Path(__file__).resolve().parent / "vendor"
+if _VENDOR.is_dir() and str(_VENDOR) not in sys.path:
+    sys.path.insert(0, str(_VENDOR))
+
 from selenium import webdriver
 from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
 from selenium.webdriver.common.action_chains import ActionChains

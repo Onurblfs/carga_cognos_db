@@ -98,7 +98,27 @@ def main() -> int:
         buscar_job(config_cognos, fonte.nome)
 
     if not args.sem_baixar:
-        executar_download(somente=[f.nome for f in fontes], sem_mover=True)
+        filtro = [f.nome for f in fontes] if args.fonte else None
+        executar_download(somente=filtro, sem_mover=True)
+
+    # Sem Excel, nao adianta abrir o Oracle
+    prontas = []
+    for fonte in fontes:
+        job = buscar_job(config_cognos, fonte.nome)
+        try:
+            localizar_arquivo(config_cognos, job)
+            prontas.append(fonte)
+        except FileNotFoundError as exc:
+            logger.error("%s", exc)
+
+    if not prontas:
+        logger.error(
+            "Nenhum Excel encontrado em downloads\\. "
+            "A carga no DWH foi abortada."
+        )
+        return 1
+
+    fontes = prontas
 
     usuario, senha = ler_credenciais(
         config.arquivo_credenciais,
