@@ -8,6 +8,8 @@ Uso:
     python -m src.main --sem-mover            # baixa sem copiar para a rede
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 import sys

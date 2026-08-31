@@ -10,6 +10,8 @@ Segue o padrao do script de carga ja validado em producao (Scrip_carga_banco):
 - coleta de estatisticas (DBMS_STATS) ao final, sem falhar a carga.
 """
 
+from __future__ import annotations
+
 import logging
 import re
 import sys

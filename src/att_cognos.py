@@ -10,6 +10,8 @@ Este modulo:
   - localiza o Excel de cada exportacao (em downloads/ ou na pasta de rede).
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import subprocess
