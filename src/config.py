@@ -14,7 +14,7 @@ load_dotenv(RAIZ_PROJETO / ".env")
 
 @dataclass
 class Fonte:
-    """Uma exportacao do Planning Analytics e sua tabela de destino.
+    """Uma exportacao do Planning Analytics e sua tabela de destino no DWH.
 
     O campo 'nome' deve ser IGUAL ao campo 'nome' da exportacao no
     config.json do att_cognos_pbi (ex.: "Receitas (IRAT.950)").
@@ -31,8 +31,12 @@ class Fonte:
 @dataclass
 class Config:
     pasta_att: Path
-    db_connection_string: str
-    db_schema: str | None
+    dsn_oracle: str
+    schema_destino: str | None
+    arquivo_credenciais: Path
+    aba_credenciais: str
+    coluna_usuario: str
+    coluna_senha: str
     fontes: list[Fonte]
 
 
@@ -65,7 +69,11 @@ def carregar_config(caminho_fontes: str | Path | None = None) -> Config:
 
     return Config(
         pasta_att=pasta_att,
-        db_connection_string=_obrigatoria("DB_CONNECTION_STRING"),
-        db_schema=os.getenv("DB_SCHEMA", "").strip() or None,
+        dsn_oracle=_obrigatoria("DSN_ORACLE"),
+        schema_destino=os.getenv("SCHEMA_DESTINO", "").strip() or None,
+        arquivo_credenciais=Path(_obrigatoria("ARQUIVO_CREDENCIAIS")),
+        aba_credenciais=os.getenv("ABA_CREDENCIAIS", "Plan1").strip() or "Plan1",
+        coluna_usuario=os.getenv("COLUNA_USUARIO", "user_dw2").strip() or "user_dw2",
+        coluna_senha=os.getenv("COLUNA_SENHA", "pass_dw2").strip() or "pass_dw2",
         fontes=fontes,
     )

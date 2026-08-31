@@ -6,7 +6,7 @@
 #                 config.json do att_cognos_pbi
 #   tabela      : nome da tabela de destino no banco
 #   schema      : schema da tabela (opcional; usa DB_SCHEMA do .env)
-#   modo_carga  : substituir -> TRUNCATE + INSERT (mantem a estrutura)
+#   modo_carga  : substituir -> DELETE + INSERT (mantem a estrutura)
 #                 recriar    -> DROP + CREATE (estrutura inferida dos dados)
 #                 anexar     -> apenas INSERT (acumula historico)
 #   aba         : nome ou indice da aba do Excel (padrao: 0 = primeira)

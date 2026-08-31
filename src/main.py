@@ -22,7 +22,7 @@ from src.att_cognos import (
     localizar_arquivo,
 )
 from src.config import Fonte, carregar_config
-from src.db_loader import carregar_dataframe, criar_engine
+from src.db_loader import DRIVER_ORACLE, CargaOracle, ler_credenciais
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,7 +45,7 @@ def ler_excel(caminho, fonte: Fonte) -> pd.DataFrame:
     return df
 
 
-def processar_fonte(fonte: Fonte, config, config_att, engine) -> int:
+def processar_fonte(fonte: Fonte, config, config_att, carga: CargaOracle) -> int:
     logger.info("=== Fonte: %s ===", fonte.nome)
 
     job = buscar_job(config_att, fonte.nome)
@@ -57,14 +57,13 @@ def processar_fonte(fonte: Fonte, config, config_att, engine) -> int:
         raise RuntimeError(f"O arquivo {arquivo.name} nao contem dados.")
 
     # Colunas de auditoria da carga no DWH
-    df["dt_carga"] = datetime.now()
-    df["arquivo_origem"] = arquivo.name
+    df["DT_CARGA"] = datetime.now()
+    df["ARQUIVO_ORIGEM"] = arquivo.name
 
-    return carregar_dataframe(
-        engine=engine,
+    return carga.carregar(
         df=df,
         tabela=fonte.tabela,
-        schema=fonte.schema or config.db_schema,
+        schema=fonte.schema or config.schema_destino,
         modo=fonte.modo_carga,
     )
 
@@ -110,12 +109,20 @@ def main() -> int:
             sem_mover=args.sem_mover,
         )
 
-    engine = criar_engine(config.db_connection_string)
+    usuario, senha = ler_credenciais(
+        config.arquivo_credenciais,
+        config.aba_credenciais,
+        config.coluna_usuario,
+        config.coluna_senha,
+    )
+    logger.info("Driver Oracle: %s | DSN: %s | Usuário de gravação: %s",
+                DRIVER_ORACLE, config.dsn_oracle, usuario)
+    carga = CargaOracle(config.dsn_oracle, usuario, senha)
 
     sucesso, falhas = 0, []
     for fonte in fontes:
         try:
-            processar_fonte(fonte, config, config_att, engine)
+            processar_fonte(fonte, config, config_att, carga)
             sucesso += 1
         except Exception:
             logger.exception("Falha ao processar a fonte '%s'.", fonte.nome)
