@@ -1,0 +1,24 @@
+# Ambiente / credenciais
+.env
+*.env
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Arquivos baixados do Cognos
+downloads/
+*.csv
+*.xlsx
+*.xls
+
+# Logs
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/

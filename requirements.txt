@@ -1,0 +1,7 @@
+requests>=2.31
+pandas>=2.0
+SQLAlchemy>=2.0
+pyodbc>=5.0
+python-dotenv>=1.0
+PyYAML>=6.0
+openpyxl>=3.1
