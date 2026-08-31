@@ -66,37 +66,19 @@ if not exist ".env" (
   )
 )
 
-REM ----- Verifica se as bibliotecas ja existem -----
-echo Verificando bibliotecas ^(pandas, PyYAML, openpyxl, selenium, driver Oracle^)...
-set "LIBS_OK="
-"%PYTHON%" -c "import importlib.util as u, sys; sys.exit(0 if all(u.find_spec(m) for m in ['pandas','yaml','openpyxl','selenium']) and (u.find_spec('oracledb') or u.find_spec('cx_Oracle')) else 1)" >nul 2>&1 && set "LIBS_OK=1"
-
-if defined LIBS_OK (
-  echo Bibliotecas OK ^(ja instaladas^).
-  goto :libs_prontas
+REM ----- Verifica bibliotecas (NAO instala: a rede da Claro bloqueia o pypi.org) -----
+echo Verificando bibliotecas...
+"%PYTHON%" -c "import importlib.util as u, sys; core=['pandas','yaml','openpyxl']; miss=[m for m in core if not u.find_spec(m)]; miss += [] if (u.find_spec('oracledb') or u.find_spec('cx_Oracle')) else ['oracledb']; sel=bool(u.find_spec('selenium')); print('FALTANDO: '+', '.join(miss) if miss else 'CORE_OK'); print('SELENIUM='+('OK' if sel else 'AUSENTE')); sys.exit(2 if miss else 0)"
+set "CHK=%ERRORLEVEL%"
+if not "%CHK%"=="0" (
+  echo.
+  echo [ERRO] Faltam bibliotecas essenciais no Anaconda.
+  echo Como o pip nao funciona nesta rede, use o Anaconda Prompt:
+  echo    conda install pandas pyyaml openpyxl
+  pause
+  exit /b 1
 )
-
-echo Instalando as bibliotecas que faltam...
-"%PYTHON%" -m pip install -r requirements.txt --disable-pip-version-check -q
-if not errorlevel 1 goto :libs_instaladas
-
-echo Tentando instalar apenas para o usuario atual ^(--user^)...
-"%PYTHON%" -m pip install -r requirements.txt --user --disable-pip-version-check -q
-if not errorlevel 1 goto :libs_instaladas
-
-echo.
-echo [ERRO] Nao foi possivel instalar as bibliotecas automaticamente
-echo        ^(a rede da empresa bloqueia o acesso direto ao pypi.org^).
-echo.
-echo Abra o "Anaconda Prompt" pelo Menu Iniciar e rode o que faltar:
-echo    pip install --proxy http://PROXY:PORTA oracledb selenium
-echo.
-echo Depois rode este PLAY ME de novo.
-pause
-exit /b 1
-
-:libs_instaladas
-echo Bibliotecas instaladas com sucesso.
+echo Bibliotecas OK. Seguindo sem pip ^(rede corporativa bloqueia pypi.org^).
 
 :libs_prontas
 echo.
