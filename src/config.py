@@ -67,6 +67,39 @@ def _obrigatoria(nome_var: str) -> str:
     return valor
 
 
+def achar_planilha_oracle(caminho_env: str) -> Path:
+    """Usa o caminho do .env; se nao existir, procura DB_acess.xlsx na Area de Trabalho."""
+    candidatos = [Path(caminho_env)]
+    home = Path.home()
+    nomes = ("DB_acess.xlsx", "DB_access.xlsx", "DB_acess.xls", "acess.xlsx")
+    pastas = [
+        home / "Desktop",
+        home / "Área de Trabalho",
+        home / "Documents",
+        home / "Documentos",
+        home / "OneDrive - Claro SA" / "Desktop",
+        home / "OneDrive - Claro SA" / "Área de Trabalho",
+        home / "OneDrive - Claro SA" / "Documents",
+    ]
+    try:
+        pastas.extend(home.glob("OneDrive*/Desktop"))
+        pastas.extend(home.glob("OneDrive*/Área de Trabalho"))
+        pastas.extend(home.glob("OneDrive*/Documents"))
+    except Exception:
+        pass
+    for pasta in pastas:
+        for nome in nomes:
+            candidatos.append(Path(pasta) / nome)
+
+    for caminho in candidatos:
+        try:
+            if caminho.is_file():
+                return caminho
+        except OSError:
+            continue
+    return Path(caminho_env)
+
+
 def carregar_config(caminho_fontes: str | Path | None = None) -> Config:
     caminho_fontes = Path(caminho_fontes or RAIZ_PROJETO / "config" / "fontes.yaml")
 
@@ -80,7 +113,7 @@ def carregar_config(caminho_fontes: str | Path | None = None) -> Config:
     return Config(
         dsn_oracle=_obrigatoria("DSN_ORACLE"),
         schema_destino=os.getenv("SCHEMA_DESTINO", "").strip() or None,
-        arquivo_credenciais=Path(_obrigatoria("ARQUIVO_CREDENCIAIS")),
+        arquivo_credenciais=achar_planilha_oracle(_obrigatoria("ARQUIVO_CREDENCIAIS")),
         aba_credenciais=os.getenv("ABA_CREDENCIAIS", "Plan1").strip() or "Plan1",
         coluna_usuario=os.getenv("COLUNA_USUARIO", "user_dw2").strip() or "user_dw2",
         coluna_senha=os.getenv("COLUNA_SENHA", "pass_dw2").strip() or "pass_dw2",

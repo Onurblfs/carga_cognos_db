@@ -496,16 +496,59 @@ def salvar_debug(driver, pasta: Path, rotulo: str, erro: str | None = None) -> P
     return base
 
 
+def achar_arquivo_senha_cognos(caminho_config: str | Path | None) -> Path | None:
+    """Procura acess.txt na Area de Trabalho e no caminho do config.json."""
+    candidatos: list[Path] = []
+    if caminho_config:
+        candidatos.append(Path(str(caminho_config).strip()))
+
+    home = Path.home()
+    nomes = ("acess.txt", "access.txt", "Acess.txt", "Access.txt")
+    pastas = [
+        home / "Desktop",
+        home / "Área de Trabalho",
+        home / "OneDrive" / "Desktop",
+        home / "OneDrive" / "Área de Trabalho",
+        home / "OneDrive - Claro SA" / "Desktop",
+        home / "OneDrive - Claro SA" / "Área de Trabalho",
+    ]
+    try:
+        pastas.extend(home.glob("OneDrive*/Desktop"))
+        pastas.extend(home.glob("OneDrive*/Área de Trabalho"))
+    except Exception:
+        pass
+
+    for pasta in pastas:
+        for nome in nomes:
+            candidatos.append(Path(pasta) / nome)
+
+    vistos: set[str] = set()
+    for caminho in candidatos:
+        chave = str(caminho).lower()
+        if chave in vistos:
+            continue
+        vistos.add(chave)
+        try:
+            if caminho.is_file():
+                return caminho
+        except OSError:
+            continue
+    return None
+
+
 def carregar_credenciais(caminho: str | Path | None) -> tuple[str, str] | None:
     """
     Le arquivo de credenciais: 1a linha = login, 2a linha = senha.
-    Nunca imprime a senha.
+    Nunca imprime a senha. Procura na Area de Trabalho se o caminho
+    do config.json nao existir.
     """
-    if not caminho:
-        return None
-    path = Path(caminho).expanduser()
-    if not path.exists():
-        log(f"Arquivo de credenciais nao encontrado: {path}")
+    path = achar_arquivo_senha_cognos(caminho)
+    if path is None:
+        log(
+            "Arquivo de senha do Cognos nao encontrado. "
+            "Coloque acess.txt na Area de Trabalho (1a linha login, 2a linha senha) "
+            f"ou ajuste arquivo_credenciais no config.json. Procurado: {caminho}"
+        )
         return None
     linhas = [
         ln.strip()
@@ -518,7 +561,7 @@ def carregar_credenciais(caminho: str | Path | None) -> tuple[str, str] | None:
             "Esperado: 1a linha login, 2a linha senha."
         )
     usuario, senha = linhas[0], linhas[1]
-    log(f"Credenciais carregadas para usuario: {usuario}")
+    log(f"Credenciais Cognos carregadas de {path} (usuario: {usuario})")
     return usuario, senha
 
 
