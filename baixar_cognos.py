@@ -217,7 +217,7 @@ def achar_msedge() -> Path | None:
 
 
 def versao_exe_windows(caminho: Path) -> str | None:
-    """Le a versao de um .exe no Windows (Edge da Claro e 112.0.1722.48)."""
+    """Le a versao de um .exe no Windows."""
     if os.name != "nt" or not caminho.is_file():
         return None
     try:

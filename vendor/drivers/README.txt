@@ -1,3 +1,2 @@
-msedgedriver 145.0.3800.82 win64 (para Microsoft Edge)
-
-chromedriver 112.0.5615.49 win32 (Edge/Chrome 112 da Claro)
+msedgedriver 152.0.4191.53 win64 (Edge 152 da Claro)
+chromedriver 112.0.5615.49 win32 (fallback Edge <= 114)
