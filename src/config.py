@@ -5,11 +5,27 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
-from dotenv import load_dotenv
 
 RAIZ_PROJETO = Path(__file__).resolve().parent.parent
 
-load_dotenv(RAIZ_PROJETO / ".env")
+
+def _carregar_env(caminho: Path) -> None:
+    """Le o arquivo .env sem depender da biblioteca python-dotenv
+    (que nao vem com o Anaconda e pode nao instalar em rede restrita)."""
+    if not caminho.exists():
+        return
+    for linha in caminho.read_text(encoding="utf-8-sig").splitlines():
+        linha = linha.strip()
+        if not linha or linha.startswith("#") or "=" not in linha:
+            continue
+        chave, _, valor = linha.partition("=")
+        chave = chave.strip()
+        valor = valor.strip().strip('"').strip("'")
+        if chave:
+            os.environ.setdefault(chave, valor)
+
+
+_carregar_env(RAIZ_PROJETO / ".env")
 
 
 @dataclass

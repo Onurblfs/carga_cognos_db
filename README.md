@@ -38,8 +38,10 @@ carga_cognos_db/
 
 O `PLAY ME.bat` faz tudo sozinho:
 
-1. localiza o Python da maquina (Anaconda corporativo ou Python instalado);
-2. **instala automaticamente as bibliotecas** do `requirements.txt`;
+1. localiza o Python da maquina e ativa o Anaconda (corrige o erro de SSL do pip);
+2. verifica as bibliotecas e **so instala se faltar alguma** — em maquinas
+   onde o `Scrip_carga_banco` ja roda, nada precisa ser instalado (pandas,
+   PyYAML e openpyxl vem com o Anaconda; o driver Oracle ja esta presente);
 3. na primeira execucao, cria o `.env` a partir do modelo e abre no Bloco de
    Notas para voce conferir os caminhos;
 4. mostra um menu (fluxo completo / so gravar / baixar sem copiar para a rede)

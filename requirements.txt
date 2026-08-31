@@ -1,5 +1,7 @@
+# Em maquinas com Anaconda onde o Scrip_carga_banco ja roda, nada precisa
+# ser instalado: pandas, PyYAML e openpyxl vem com o Anaconda e o driver
+# Oracle (cx_Oracle ou oracledb) ja esta presente.
 pandas>=2.0
-oracledb>=2.0
-python-dotenv>=1.0
 PyYAML>=6.0
 openpyxl>=3.1
+oracledb>=2.0

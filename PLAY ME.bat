@@ -65,10 +65,12 @@ if not exist ".env" (
   )
 )
 
-REM ----- Verifica se as bibliotecas ja existem (Anaconda ja traz quase todas) -----
-echo Verificando bibliotecas ^(pandas, oracledb, dotenv, PyYAML, openpyxl^)...
+REM ----- Verifica se as bibliotecas ja existem -----
+REM Em maquinas onde o Scrip_carga_banco ja roda, tudo ja esta instalado
+REM (pandas, PyYAML e openpyxl vem com o Anaconda; cx_Oracle/oracledb idem).
+echo Verificando bibliotecas ^(pandas, PyYAML, openpyxl, driver Oracle^)...
 set "LIBS_OK="
-"%PYTHON%" -c "import importlib.util as u, sys; sys.exit(0 if all(u.find_spec(m) for m in ['pandas','yaml','dotenv','openpyxl']) and (u.find_spec('oracledb') or u.find_spec('cx_Oracle')) else 1)" >nul 2>&1 && set "LIBS_OK=1"
+"%PYTHON%" -c "import importlib.util as u, sys; sys.exit(0 if all(u.find_spec(m) for m in ['pandas','yaml','openpyxl']) and (u.find_spec('oracledb') or u.find_spec('cx_Oracle')) else 1)" >nul 2>&1 && set "LIBS_OK=1"
 
 if defined LIBS_OK (
   echo Bibliotecas OK ^(ja instaladas^).
@@ -84,15 +86,16 @@ echo Tentando instalar apenas para o usuario atual ^(--user^)...
 if not errorlevel 1 goto :libs_instaladas
 
 echo.
-echo [ERRO] Nao foi possivel instalar as bibliotecas automaticamente.
+echo [ERRO] Nao foi possivel instalar as bibliotecas automaticamente
+echo        ^(a rede da empresa bloqueia o acesso direto ao pypi.org^).
 echo.
-echo Faca o seguinte: abra o "Anaconda Prompt" pelo Menu Iniciar e rode:
+echo Como o Scrip_carga_banco ja roda nesta maquina, provavelmente so falta
+echo o driver Oracle. Abra o "Anaconda Prompt" pelo Menu Iniciar e rode:
 echo.
-echo    pip install oracledb python-dotenv
+echo    pip install --proxy http://PROXY:PORTA oracledb
 echo.
-echo ^(pandas, PyYAML e openpyxl ja vem com o Anaconda^)
-echo Se a rede bloquear, tente com o proxy da empresa:
-echo    pip install --proxy http://PROXY:PORTA oracledb python-dotenv
+echo ^(troque PROXY:PORTA pelo proxy da Claro^) ou, se preferir:
+echo    conda install -c conda-forge oracledb
 echo.
 echo Depois rode este PLAY ME de novo.
 pause
