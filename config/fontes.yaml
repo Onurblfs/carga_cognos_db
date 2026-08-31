@@ -1,37 +1,52 @@
 # ============================================================
-# Cadastro das fontes de dados do Cognos e das tabelas de destino.
-#
-# Cada item da lista "fontes" representa um relatorio/fonte do Cognos
-# que sera baixado e gravado em uma tabela do banco.
+# Mapeia cada exportacao do att_cognos_pbi para uma tabela do banco.
 #
 # Campos:
-#   nome          : nome amigavel da fonte (aparece nos logs)
-#   store_id      : storeID do relatorio no Cognos.
-#                   Para descobrir: no Cognos, abra as propriedades do
-#                   relatorio > aba "Geral" > "ID" (algo como
-#                   i5F2E...). Tambem funciona o "search path".
-#   formato       : formato de saida do relatorio (CSV ou spreadsheetML)
-#   tabela        : nome da tabela de destino no banco
-#   schema        : schema da tabela (opcional; usa DB_SCHEMA do .env se vazio)
-#   modo_carga    : substituir  -> TRUNCATE + INSERT (mantem estrutura da tabela)
-#                   recriar     -> DROP + CREATE (estrutura inferida do DataFrame)
-#                   anexar      -> apenas INSERT (acumula historico)
-#   parametros    : (opcional) prompts/parametros do relatorio, ex:
-#                   parametros:
-#                     p_data_inicio: "2026-01-01"
-#                     p_regiao: "SP"
+#   nome        : deve ser IGUAL ao campo "nome" da exportacao no
+#                 config.json do att_cognos_pbi
+#   tabela      : nome da tabela de destino no banco
+#   schema      : schema da tabela (opcional; usa DB_SCHEMA do .env)
+#   modo_carga  : substituir -> TRUNCATE + INSERT (mantem a estrutura)
+#                 recriar    -> DROP + CREATE (estrutura inferida dos dados)
+#                 anexar     -> apenas INSERT (acumula historico)
+#   aba         : nome ou indice da aba do Excel (padrao: 0 = primeira)
+#   linhas_pular: linhas de titulo/contexto a pular antes do cabecalho
+#                 (ajuste na primeira execucao olhando o Excel exportado)
 # ============================================================
 
 fontes:
-  - nome: exemplo_relatorio_vendas
-    store_id: "iCOLE_AQUI_O_STORE_ID"
-    formato: CSV
-    tabela: tb_cognos_vendas
-    schema: dbo
+  - nome: "Receitas (IRAT.950)"
+    tabela: tb_irat950_receita
     modo_carga: substituir
+    aba: 0
+    linhas_pular: 0
 
-  # - nome: exemplo_relatorio_base_clientes
-  #   store_id: "iOUTRO_STORE_ID"
-  #   formato: spreadsheetML   # Excel (.xlsx)
-  #   tabela: tb_cognos_clientes
-  #   modo_carga: recriar
+  - nome: "Fisicos (FIS.900)"
+    tabela: tb_fis900_fisico
+    modo_carga: substituir
+    aba: 0
+    linhas_pular: 0
+
+  - nome: "Custos (IRAT.950 Custo)"
+    tabela: tb_irat950_custo
+    modo_carga: substituir
+    aba: 0
+    linhas_pular: 0
+
+  - nome: "Abertura da Receita / Waterfall (REV.900)"
+    tabela: tb_rev900_receita_abertura
+    modo_carga: substituir
+    aba: 0
+    linhas_pular: 0
+
+  - nome: "Pre-Pago Parte 1 (CTS.100)"
+    tabela: tb_cts100_prepago
+    modo_carga: substituir
+    aba: 0
+    linhas_pular: 0
+
+  - nome: "Pre-Pago Parte 2 (REV.420)"
+    tabela: tb_rev420_prepago
+    modo_carga: substituir
+    aba: 0
+    linhas_pular: 0

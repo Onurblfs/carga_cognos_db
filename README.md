@@ -1,25 +1,33 @@
 # carga_cognos_db
 
-Fluxo de dados que **baixa as fontes de dados do IBM Cognos Analytics e grava em banco de dados**.
+Fluxo de dados que **baixa as bases do Cognos (IBM Planning Analytics) e grava em banco de dados**.
 
-O fluxo funciona em 3 etapas para cada fonte cadastrada:
+O download reaproveita a automacao ja existente do repositorio
+[att_cognos_pbi](https://github.com/Onurblfs/att_cognos_pbi) (Selenium + Edge),
+que exporta as views para Excel. Este projeto adiciona a etapa de **carga em banco**:
 
-1. **Download** — autentica no Cognos e executa o relatorio, baixando o resultado em CSV ou Excel (`src/cognos_client.py`);
-2. **Leitura** — converte o arquivo baixado em DataFrame do pandas (`src/main.py`);
-3. **Carga** — grava o DataFrame na tabela de destino do banco (`src/db_loader.py`).
+```
+att_cognos_pbi (Selenium)          carga_cognos_db (este projeto)
+┌──────────────────────────┐       ┌─────────────────────────────┐
+│ 1. Login no Planning     │       │ 3. Localiza o Excel de cada │
+│    Analytics             │  -->  │    exportacao               │
+│ 2. Exporta cada view     │       │ 4. Le com pandas            │
+│    para Excel            │       │ 5. Grava na tabela do banco │
+└──────────────────────────┘       └─────────────────────────────┘
+```
 
 ## Estrutura
 
 ```
 carga_cognos_db/
 ├── config/
-│   └── fontes.yaml        # cadastro das fontes do Cognos e tabelas de destino
+│   └── fontes.yaml        # exportacao do att_cognos_pbi -> tabela do banco
 ├── src/
+│   ├── att_cognos.py      # integra com o att_cognos_pbi (roda o download, acha os arquivos)
 │   ├── config.py          # leitura do .env e do fontes.yaml
-│   ├── cognos_client.py   # login e download dos relatorios do Cognos
-│   ├── db_loader.py       # gravacao dos dados no banco (pandas + SQLAlchemy)
+│   ├── db_loader.py       # gravacao no banco (pandas + SQLAlchemy)
 │   └── main.py            # orquestrador do fluxo
-├── .env.example           # modelo das variaveis de ambiente (credenciais)
+├── .env.example           # modelo das variaveis de ambiente
 └── requirements.txt
 ```
 
@@ -27,49 +35,62 @@ carga_cognos_db/
 
 ### 1. Instalar dependencias
 
-```bash
+```powershell
 python -m venv .venv
-.venv\Scripts\activate        # Windows
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-> Para SQL Server e necessario ter o **ODBC Driver 17 (ou 18) for SQL Server** instalado na maquina.
+> Para SQL Server e necessario o **ODBC Driver 17 (ou 18) for SQL Server** na maquina.
 
-### 2. Configurar credenciais
+### 2. Configurar
 
 Copie `.env.example` para `.env` e preencha:
 
-- `COGNOS_URL`, `COGNOS_NAMESPACE`, `COGNOS_USUARIO`, `COGNOS_SENHA` — acesso ao Cognos;
-- `DB_CONNECTION_STRING` — string de conexao SQLAlchemy do banco de destino (exemplos no proprio arquivo, incluindo SQL Server com autenticacao Windows).
+- `ATT_COGNOS_DIR` — pasta onde o `att_cognos_pbi` esta clonado;
+- `DB_CONNECTION_STRING` — string de conexao do banco de destino (exemplos no arquivo).
 
-### 3. Cadastrar as fontes
+As 6 exportacoes ja estao cadastradas em `config/fontes.yaml` com os mesmos
+nomes do `config.json` do `att_cognos_pbi`; ajuste apenas os nomes das tabelas
+se quiser outros.
 
-Edite `config/fontes.yaml` e cadastre cada relatorio/fonte do Cognos com:
+### 3. Executar
 
-- `store_id` do relatorio (propriedades do relatorio no Cognos > Geral > ID);
-- `tabela` e `schema` de destino no banco;
-- `modo_carga`: `substituir` (TRUNCATE + INSERT), `recriar` (DROP + CREATE) ou `anexar` (INSERT acumulando historico).
+```powershell
+# Fluxo completo: baixa do Planning Analytics e grava no banco
+python -m src.main
 
-### 4. Executar
+# Apenas uma fonte
+python -m src.main --fonte "Receitas (IRAT.950)"
 
-```bash
-python -m src.main                        # processa todas as fontes
-python -m src.main --fonte nome_da_fonte  # processa apenas uma fonte
+# So gravar no banco arquivos ja baixados (sem abrir o navegador)
+python -m src.main --sem-baixar
+
+# Baixar sem copiar para a pasta de rede (teste)
+python -m src.main --sem-mover
 ```
 
-Cada execucao tambem salva uma copia do arquivo baixado na pasta `downloads/` (auditoria) e grava logs no console.
+O download continua se comportando exatamente como no `att_cognos_pbi`
+(mesmo painel de status, backup na rede etc.); a novidade e a gravacao das
+tabelas no banco ao final.
 
-### 5. Agendar (opcional)
+### 4. Agendar (opcional)
 
-No Windows, agende pelo **Agendador de Tarefas** apontando para:
+No Agendador de Tarefas do Windows, aponte para:
 
 ```
-C:\caminho\do\projeto\.venv\Scripts\python.exe -m src.main
+C:\caminho\do\carga_cognos_db\.venv\Scripts\python.exe -m src.main
 ```
 
 com "Iniciar em" = pasta do projeto.
 
-## Integracao com automacoes existentes
+## Detalhes da carga
 
-- Se o download do Cognos ja e feito por outra automacao (ex.: repositorio `att_cognos_pbi`), basta substituir a classe `CognosClient` mantendo a mesma interface (`login()` + `baixar_relatorio()` retornando bytes) — o restante do fluxo nao muda. Alternativamente, aponte a automacao existente para salvar os arquivos na pasta `downloads/` e use apenas o `db_loader`.
-- A gravacao no banco usa o padrao `pandas.to_sql` + SQLAlchemy com `fast_executemany` (SQL Server), em transacao, com truncamento opcional antes da carga.
+- Os nomes das colunas sao normalizados (minusculas, sem acento, `_` no lugar
+  de espacos) para ficarem amigaveis ao banco.
+- Linhas e colunas totalmente vazias do Excel sao descartadas.
+- Se o Excel exportado tiver linhas de titulo antes do cabecalho, ajuste
+  `linhas_pular` na fonte correspondente do `fontes.yaml`.
+- Modos de carga por fonte: `substituir` (TRUNCATE + INSERT), `recriar`
+  (DROP + CREATE) e `anexar` (INSERT acumulando historico).
+- Em SQL Server a gravacao usa `fast_executemany` (insercao em lote rapida).

@@ -9,7 +9,7 @@ Modos de carga:
 import logging
 
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 
 logger = logging.getLogger(__name__)
@@ -85,25 +85,19 @@ def carregar_dataframe(
 
 def _truncar_tabela(engine: Engine, tabela: str, schema: str | None) -> None:
     nome_completo = f"{schema}.{tabela}" if schema else tabela
-    with engine.begin() as conexao:
-        existe = _tabela_existe(conexao, tabela, schema)
-        if existe:
-            conexao.execute(text(f"TRUNCATE TABLE {nome_completo}"))
-            logger.info("Tabela %s truncada.", nome_completo)
-        else:
-            logger.info(
-                "Tabela %s ainda nao existe; sera criada automaticamente.",
-                nome_completo,
-            )
+    if not inspect(engine).has_table(tabela, schema=schema):
+        logger.info(
+            "Tabela %s ainda nao existe; sera criada automaticamente.",
+            nome_completo,
+        )
+        return
 
-
-def _tabela_existe(conexao, tabela: str, schema: str | None) -> bool:
-    consulta = text(
-        """
-        SELECT COUNT(*) FROM information_schema.tables
-        WHERE table_name = :tabela
-          AND (:schema IS NULL OR table_schema = :schema)
-        """
+    # SQLite (usado em testes) nao possui TRUNCATE
+    comando = (
+        f"DELETE FROM {nome_completo}"
+        if engine.dialect.name == "sqlite"
+        else f"TRUNCATE TABLE {nome_completo}"
     )
-    total = conexao.execute(consulta, {"tabela": tabela, "schema": schema}).scalar()
-    return bool(total)
+    with engine.begin() as conexao:
+        conexao.execute(text(comando))
+    logger.info("Tabela %s truncada.", nome_completo)

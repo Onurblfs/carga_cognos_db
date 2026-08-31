@@ -1,19 +1,25 @@
-"""Orquestrador do fluxo: baixa as fontes do Cognos e grava no banco.
+"""Fluxo completo: baixa as bases do Planning Analytics (via automacao do
+att_cognos_pbi) e grava os dados em banco de dados.
 
 Uso:
-    python -m src.main                     # processa todas as fontes
-    python -m src.main --fonte nome_fonte  # processa apenas uma fonte
+    python -m src.main                        # baixa tudo e grava no banco
+    python -m src.main --fonte "Receitas (IRAT.950)"   # apenas uma fonte
+    python -m src.main --sem-baixar           # so grava arquivos ja baixados
+    python -m src.main --sem-mover            # baixa sem copiar para a rede
 """
 
 import argparse
-import io
 import logging
 import sys
-from datetime import datetime
 
 import pandas as pd
 
-from src.cognos_client import CognosClient
+from src.att_cognos import (
+    buscar_job,
+    carregar_config_att,
+    executar_download,
+    localizar_arquivo,
+)
 from src.config import Fonte, carregar_config
 from src.db_loader import carregar_dataframe, criar_engine
 
@@ -25,68 +31,61 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def ler_arquivo_para_dataframe(conteudo: bytes, formato: str) -> pd.DataFrame:
-    """Converte os bytes baixados do Cognos em DataFrame."""
-    if formato.strip().upper() == "CSV":
-        # O Cognos costuma exportar CSV em UTF-16 com tabulacao;
-        # tentamos as combinacoes mais comuns.
-        for codificacao, separador in (
-            ("utf-16", "\t"),
-            ("utf-8-sig", ","),
-            ("utf-8-sig", ";"),
-            ("latin-1", ";"),
-        ):
-            try:
-                df = pd.read_csv(
-                    io.BytesIO(conteudo), encoding=codificacao, sep=separador
-                )
-                if len(df.columns) > 1 or len(df) > 0:
-                    return df
-            except (UnicodeError, pd.errors.ParserError):
-                continue
-        raise RuntimeError("Nao foi possivel interpretar o CSV baixado do Cognos.")
-    return pd.read_excel(io.BytesIO(conteudo))
+def ler_excel(caminho, fonte: Fonte) -> pd.DataFrame:
+    """Le o arquivo exportado do Planning Analytics em DataFrame."""
+    if caminho.suffix.lower() == ".csv":
+        df = pd.read_csv(caminho, skiprows=fonte.linhas_pular)
+    else:
+        df = pd.read_excel(
+            caminho, sheet_name=fonte.aba, skiprows=fonte.linhas_pular
+        )
+    # Remove linhas e colunas totalmente vazias (comuns em exportacao de cubo)
+    df = df.dropna(how="all").dropna(axis=1, how="all")
+    return df
 
 
-def processar_fonte(fonte: Fonte, cognos: CognosClient, engine, config) -> int:
-    """Baixa uma fonte do Cognos, salva copia local e grava no banco."""
+def processar_fonte(fonte: Fonte, config, config_att, engine) -> int:
     logger.info("=== Fonte: %s ===", fonte.nome)
 
-    conteudo = cognos.baixar_relatorio(
-        store_id=fonte.store_id,
-        formato=fonte.formato,
-        parametros=fonte.parametros,
-    )
+    job = buscar_job(config_att, fonte.nome)
+    arquivo = localizar_arquivo(config.pasta_att, config_att, job)
 
-    # Copia local para conferencia/auditoria
-    extensao = CognosClient.extensao_do_formato(fonte.formato)
-    carimbo = datetime.now().strftime("%Y%m%d_%H%M%S")
-    caminho_arquivo = config.pasta_downloads / f"{fonte.nome}_{carimbo}{extensao}"
-    caminho_arquivo.write_bytes(conteudo)
-    logger.info("Arquivo salvo em %s", caminho_arquivo)
-
-    df = ler_arquivo_para_dataframe(conteudo, fonte.formato)
+    df = ler_excel(arquivo, fonte)
     logger.info("Linhas lidas: %d | Colunas: %d", len(df), len(df.columns))
+    if df.empty:
+        raise RuntimeError(f"O arquivo {arquivo.name} nao contem dados.")
 
-    linhas = carregar_dataframe(
+    return carregar_dataframe(
         engine=engine,
         df=df,
         tabela=fonte.tabela,
         schema=fonte.schema or config.db_schema,
         modo=fonte.modo_carga,
     )
-    return linhas
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Carga Cognos -> Banco de dados")
+    parser = argparse.ArgumentParser(
+        description="Carga das bases do Cognos/Planning Analytics em banco de dados"
+    )
     parser.add_argument("--fonte", help="Processa apenas a fonte com este nome")
+    parser.add_argument(
+        "--sem-baixar",
+        action="store_true",
+        help="Nao executa o download; carrega os arquivos ja existentes",
+    )
+    parser.add_argument(
+        "--sem-mover",
+        action="store_true",
+        help="Repassa --sem-mover ao baixar_cognos.py (nao copia para a rede)",
+    )
     parser.add_argument(
         "--config", default=None, help="Caminho alternativo do fontes.yaml"
     )
     args = parser.parse_args()
 
     config = carregar_config(args.config)
+    config_att = carregar_config_att(config.pasta_att)
 
     fontes = config.fontes
     if args.fonte:
@@ -95,22 +94,27 @@ def main() -> int:
             logger.error("Fonte '%s' nao encontrada no fontes.yaml.", args.fonte)
             return 1
 
+    # Valida o cadastro antes de gastar tempo com download
+    for fonte in fontes:
+        buscar_job(config_att, fonte.nome)
+
+    if not args.sem_baixar:
+        executar_download(
+            config.pasta_att,
+            somente=[f.nome for f in fontes],
+            sem_mover=args.sem_mover,
+        )
+
     engine = criar_engine(config.db_connection_string)
 
     sucesso, falhas = 0, []
-    with CognosClient(
-        config.cognos_url,
-        config.cognos_namespace,
-        config.cognos_usuario,
-        config.cognos_senha,
-    ) as cognos:
-        for fonte in fontes:
-            try:
-                processar_fonte(fonte, cognos, engine, config)
-                sucesso += 1
-            except Exception:
-                logger.exception("Falha ao processar a fonte '%s'.", fonte.nome)
-                falhas.append(fonte.nome)
+    for fonte in fontes:
+        try:
+            processar_fonte(fonte, config, config_att, engine)
+            sucesso += 1
+        except Exception:
+            logger.exception("Falha ao processar a fonte '%s'.", fonte.nome)
+            falhas.append(fonte.nome)
 
     logger.info(
         "Fluxo finalizado: %d fonte(s) com sucesso, %d falha(s).",
