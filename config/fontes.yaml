@@ -38,15 +38,3 @@ fontes:
     modo_carga: substituir
     aba: 0
     linhas_pular: 0
-
-  - nome: "Pre-Pago Parte 1 (CTS.100)"
-    tabela: BI_FT_CTS100_PREPAGO
-    modo_carga: substituir
-    aba: 0
-    linhas_pular: 0
-
-  - nome: "Pre-Pago Parte 2 (REV.420)"
-    tabela: BI_FT_REV420_PREPAGO
-    modo_carga: substituir
-    aba: 0
-    linhas_pular: 0

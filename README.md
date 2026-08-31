@@ -70,8 +70,6 @@ O login do Cognos usa o arquivo apontado em `config.json`
 | Fisicos (FIS.900) | `BI_FT_FIS900_FISICO` |
 | Custos (IRAT.950 Custo) | `BI_FT_IRAT950_CUSTO` |
 | Abertura da Receita / Waterfall (REV.900) | `BI_FT_REV900_RECEITA_ABERTURA` |
-| Pre-Pago Parte 1 (CTS.100) | `BI_FT_CTS100_PREPAGO` |
-| Pre-Pago Parte 2 (REV.420) | `BI_FT_REV420_PREPAGO` |
 
 - Cada tabela recebe duas colunas de auditoria: `DT_CARGA` e `ARQUIVO_ORIGEM`.
 - A gravacao segue o padrao do `Scrip_carga_banco`: cria a tabela se nao
