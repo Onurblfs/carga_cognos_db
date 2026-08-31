@@ -16,37 +16,37 @@
 
 fontes:
   - nome: "Receitas (IRAT.950)"
-    tabela: tb_irat950_receita
+    tabela: BI_FT_IRAT950_RECEITA
     modo_carga: substituir
     aba: 0
     linhas_pular: 0
 
   - nome: "Fisicos (FIS.900)"
-    tabela: tb_fis900_fisico
+    tabela: BI_FT_FIS900_FISICO
     modo_carga: substituir
     aba: 0
     linhas_pular: 0
 
   - nome: "Custos (IRAT.950 Custo)"
-    tabela: tb_irat950_custo
+    tabela: BI_FT_IRAT950_CUSTO
     modo_carga: substituir
     aba: 0
     linhas_pular: 0
 
   - nome: "Abertura da Receita / Waterfall (REV.900)"
-    tabela: tb_rev900_receita_abertura
+    tabela: BI_FT_REV900_RECEITA_ABERTURA
     modo_carga: substituir
     aba: 0
     linhas_pular: 0
 
   - nome: "Pre-Pago Parte 1 (CTS.100)"
-    tabela: tb_cts100_prepago
+    tabela: BI_FT_CTS100_PREPAGO
     modo_carga: substituir
     aba: 0
     linhas_pular: 0
 
   - nome: "Pre-Pago Parte 2 (REV.420)"
-    tabela: tb_rev420_prepago
+    tabela: BI_FT_REV420_PREPAGO
     modo_carga: substituir
     aba: 0
     linhas_pular: 0
