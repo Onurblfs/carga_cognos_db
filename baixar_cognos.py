@@ -22,6 +22,7 @@ Uso:
 
 import argparse
 import json
+import os
 import shutil
 import sys
 import time
@@ -37,6 +38,7 @@ try:
     from selenium.webdriver.common.action_chains import ActionChains
     from selenium.webdriver.common.by import By
     from selenium.webdriver.common.keys import Keys
+    from selenium.webdriver.edge.service import Service
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.support.ui import WebDriverWait
 except ImportError:
@@ -200,6 +202,33 @@ def carregar_config(caminho: Path) -> dict:
         return json.load(f)
 
 
+def achar_msedgedriver() -> Path | None:
+    """Localiza msedgedriver.exe sem baixar da internet (rede corporativa bloqueia)."""
+    candidatos: list[Path] = []
+
+    # 1) Driver ao lado da instalacao do Edge (mesma versao do navegador)
+    for base in (
+        Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Microsoft" / "Edge" / "Application",
+        Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / "Microsoft" / "Edge" / "Application",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "Edge" / "Application",
+    ):
+        if base.is_dir():
+            candidatos.extend(sorted(base.rglob("msedgedriver.exe"), reverse=True))
+
+    # 2) Cache do Selenium Manager (se uma execucao anterior ja baixou)
+    cache = Path.home() / ".cache" / "selenium"
+    if cache.is_dir():
+        candidatos.extend(sorted(cache.rglob("msedgedriver.exe"), reverse=True))
+
+    # 3) Copia empacotada neste projeto (offline)
+    candidatos.append(Path(__file__).resolve().parent / "vendor" / "drivers" / "msedgedriver.exe")
+
+    for caminho in candidatos:
+        if caminho and caminho.is_file():
+            return caminho
+    return None
+
+
 def criar_driver(pasta_downloads: Path) -> webdriver.Edge:
     opcoes = webdriver.EdgeOptions()
     opcoes.set_capability("acceptInsecureCerts", True)  # certificado corporativo autoassinado
@@ -209,7 +238,17 @@ def criar_driver(pasta_downloads: Path) -> webdriver.Edge:
         "safebrowsing.enabled": True,
     })
     opcoes.add_argument("--start-maximized")
-    return webdriver.Edge(options=opcoes)
+
+    driver_path = achar_msedgedriver()
+    if driver_path is None:
+        raise RuntimeError(
+            "Nao encontrei msedgedriver.exe (o Selenium nao consegue baixa-lo "
+            "porque a rede bloqueia o download). Confira se existe "
+            "vendor\\drivers\\msedgedriver.exe no projeto (git pull)."
+        )
+    log(f"Usando msedgedriver: {driver_path}")
+    servico = Service(executable_path=str(driver_path))
+    return webdriver.Edge(service=servico, options=opcoes)
 
 
 def achar_elemento(driver, chave_seletor: str, timeout: int = 20, clicavel: bool = True):
