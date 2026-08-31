@@ -46,8 +46,20 @@ echo Python: %PYTHON%
 echo Pasta:  %CD%
 echo.
 
-REM Selenium empacotado neste projeto (sem pip / sem pypi.org)
-set "PYTHONPATH=%CD%\vendor;%PYTHONPATH%"
+REM Selenium: pasta vendor\ deste projeto (nao usa pypi.org)
+set "PYTHONPATH=%~dp0vendor;%PYTHONPATH%"
+
+if not exist "%~dp0vendor\selenium\__init__.py" (
+  echo.
+  echo [AVISO] Pasta vendor\selenium nao encontrada neste clone.
+  echo Tentando instalar selenium pelo conda ^(nao usa pypi.org^)...
+  where conda >nul 2>&1
+  if not errorlevel 1 (
+    call conda install -y selenium
+  ) else (
+    echo conda nao encontrado no PATH.
+  )
+)
 
 REM ----- Prepara o .env na primeira execucao -----
 if not exist ".env" (
@@ -71,7 +83,7 @@ if not exist ".env" (
 
 REM ----- Verifica bibliotecas (NAO instala: a rede da Claro bloqueia o pypi.org) -----
 echo Verificando bibliotecas...
-"%PYTHON%" -c "import importlib.util as u, sys; core=['pandas','yaml','openpyxl']; miss=[m for m in core if not u.find_spec(m)]; miss += [] if (u.find_spec('oracledb') or u.find_spec('cx_Oracle')) else ['oracledb']; sel=bool(u.find_spec('selenium')); print('FALTANDO: '+', '.join(miss) if miss else 'CORE_OK'); print('SELENIUM='+('OK' if sel else 'AUSENTE')); sys.exit(2 if miss else 0)"
+"%PYTHON%" -c "import os, sys, importlib.util as u; sys.path.insert(0, os.path.join(os.getcwd(), 'vendor')); core=['pandas','yaml','openpyxl']; miss=[m for m in core if not u.find_spec(m)]; miss += [] if (u.find_spec('oracledb') or u.find_spec('cx_Oracle')) else ['oracledb']; sel=bool(u.find_spec('selenium')); print('FALTANDO: '+', '.join(miss) if miss else 'CORE_OK'); print('SELENIUM='+('OK' if sel else 'AUSENTE')); print('vendor=', os.path.join(os.getcwd(), 'vendor')); sys.exit(2 if miss else 0)"
 set "CHK=%ERRORLEVEL%"
 if not "%CHK%"=="0" (
   echo.

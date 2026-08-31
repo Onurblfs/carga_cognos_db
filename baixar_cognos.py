@@ -28,19 +28,31 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-# Copia local do Selenium (pasta vendor/). A rede da Claro bloqueia o pypi.org,
-# entao o projeto nao depende de pip install selenium.
+# Copia local do Selenium (pasta vendor/). A rede da Claro bloqueia o pypi.org.
 _VENDOR = Path(__file__).resolve().parent / "vendor"
-if _VENDOR.is_dir() and str(_VENDOR) not in sys.path:
-    sys.path.insert(0, str(_VENDOR))
-
-from selenium import webdriver
-from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import WebDriverWait
+sys.path.insert(0, str(_VENDOR))
+try:
+    from selenium import webdriver
+    from selenium.common.exceptions import StaleElementReferenceException, TimeoutException
+    from selenium.webdriver.common.action_chains import ActionChains
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.common.keys import Keys
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.support.ui import WebDriverWait
+except ImportError:
+    print("=" * 70)
+    print("ERRO: nao foi possivel importar o Selenium.")
+    print("Pasta vendor :", _VENDOR)
+    print("vendor existe:", _VENDOR.is_dir())
+    print("selenium dir :", (_VENDOR / "selenium").is_dir())
+    print()
+    print("Na pasta do projeto rode:")
+    print("  git pull")
+    print("e confira se existe a pasta vendor\\selenium")
+    print("Se o git pull nao baixar a pasta, no Anaconda Prompt:")
+    print("  conda install -y selenium")
+    print("=" * 70)
+    raise
 
 from painel_status import ESTIMATIVA_PADRAO_SEG, PainelAcompanhamento
 
