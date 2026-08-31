@@ -33,7 +33,20 @@ carga_cognos_db/
 
 ## Como usar
 
-### 1. Instalar dependencias
+### Jeito facil: duplo clique no `PLAY ME.bat`
+
+O `PLAY ME.bat` faz tudo sozinho:
+
+1. localiza o Python da maquina (Anaconda corporativo ou Python instalado);
+2. **instala automaticamente as bibliotecas** do `requirements.txt`;
+3. na primeira execucao, cria o `.env` a partir do modelo e abre no Bloco de
+   Notas para voce conferir os caminhos;
+4. mostra um menu (fluxo completo / so gravar / baixar sem copiar para a rede)
+   e executa a carga.
+
+### Jeito manual
+
+#### 1. Instalar dependencias
 
 ```powershell
 python -m venv .venv
@@ -44,7 +57,7 @@ pip install -r requirements.txt
 > O driver `python-oracledb` funciona em modo *thin* (nao precisa do Oracle
 > Client instalado). Se a maquina ja tiver o `cx_Oracle`, ele tambem e aceito.
 
-### 2. Configurar
+#### 2. Configurar
 
 Copie `.env.example` para `.env` e preencha:
 
@@ -58,7 +71,7 @@ As 6 exportacoes ja estao cadastradas em `config/fontes.yaml` com os mesmos
 nomes do `config.json` do `att_cognos_pbi`; ajuste apenas os nomes das tabelas
 se quiser outros.
 
-### 3. Executar
+#### 3. Executar
 
 ```powershell
 # Fluxo completo: baixa do Planning Analytics e grava no banco
@@ -78,7 +91,7 @@ O download continua se comportando exatamente como no `att_cognos_pbi`
 (mesmo painel de status, backup na rede etc.); a novidade e a gravacao das
 tabelas no banco ao final.
 
-### 4. Agendar (opcional)
+### Agendar (opcional)
 
 No Agendador de Tarefas do Windows, aponte para:
 
