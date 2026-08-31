@@ -24,6 +24,7 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import sys
 import time
 from datetime import datetime
@@ -38,6 +39,8 @@ try:
     from selenium.webdriver.common.action_chains import ActionChains
     from selenium.webdriver.common.by import By
     from selenium.webdriver.common.keys import Keys
+    from selenium.webdriver.chrome.options import Options as ChromeOptions
+    from selenium.webdriver.chrome.service import Service as ChromeService
     from selenium.webdriver.edge.service import Service
     from selenium.webdriver.support import expected_conditions as EC
     from selenium.webdriver.support.ui import WebDriverWait
@@ -202,11 +205,45 @@ def carregar_config(caminho: Path) -> dict:
         return json.load(f)
 
 
+def achar_msedge() -> Path | None:
+    for caminho in (
+        Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / "Microsoft" / "Edge" / "Application" / "msedge.exe",
+        Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Microsoft" / "Edge" / "Application" / "msedge.exe",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "Edge" / "Application" / "msedge.exe",
+    ):
+        if caminho.is_file():
+            return caminho
+    return None
+
+
+def versao_exe_windows(caminho: Path) -> str | None:
+    """Le a versao de um .exe no Windows (Edge da Claro e 112.0.1722.48)."""
+    if os.name != "nt" or not caminho.is_file():
+        return None
+    try:
+        cmd = f"(Get-Item -LiteralPath '{caminho}').VersionInfo.ProductVersion"
+        out = subprocess.check_output(
+            ["powershell", "-NoProfile", "-Command", cmd],
+            stderr=subprocess.DEVNULL,
+            timeout=20,
+        )
+        return out.decode("utf-8", "ignore").strip() or None
+    except Exception:
+        return None
+
+
+def prefs_download(pasta_downloads: Path) -> dict:
+    return {
+        "download.default_directory": str(pasta_downloads),
+        "download.prompt_for_download": False,
+        "safebrowsing.enabled": True,
+    }
+
+
 def achar_msedgedriver() -> Path | None:
     """Localiza msedgedriver.exe sem baixar da internet (rede corporativa bloqueia)."""
     candidatos: list[Path] = []
 
-    # 1) Driver ao lado da instalacao do Edge (mesma versao do navegador)
     for base in (
         Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "Microsoft" / "Edge" / "Application",
         Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / "Microsoft" / "Edge" / "Application",
@@ -215,12 +252,10 @@ def achar_msedgedriver() -> Path | None:
         if base.is_dir():
             candidatos.extend(sorted(base.rglob("msedgedriver.exe"), reverse=True))
 
-    # 2) Cache do Selenium Manager (se uma execucao anterior ja baixou)
     cache = Path.home() / ".cache" / "selenium"
     if cache.is_dir():
         candidatos.extend(sorted(cache.rglob("msedgedriver.exe"), reverse=True))
 
-    # 3) Copia empacotada neste projeto (offline)
     candidatos.append(Path(__file__).resolve().parent / "vendor" / "drivers" / "msedgedriver.exe")
 
     for caminho in candidatos:
@@ -229,26 +264,67 @@ def achar_msedgedriver() -> Path | None:
     return None
 
 
-def criar_driver(pasta_downloads: Path) -> webdriver.Edge:
-    opcoes = webdriver.EdgeOptions()
-    opcoes.set_capability("acceptInsecureCerts", True)  # certificado corporativo autoassinado
-    opcoes.add_experimental_option("prefs", {
-        "download.default_directory": str(pasta_downloads),
-        "download.prompt_for_download": False,
-        "safebrowsing.enabled": True,
-    })
+def criar_driver_via_chromedriver(pasta_downloads: Path, edge_exe: Path):
+    """Edge 112 (Claro) fala o protocolo Chromium 112; usamos chromedriver 112 + o msedge.exe."""
+    chrome_drv = Path(__file__).resolve().parent / "vendor" / "drivers" / "chromedriver.exe"
+    if not chrome_drv.is_file():
+        raise RuntimeError(
+            f"chromedriver.exe nao encontrado em {chrome_drv}. Rode git pull."
+        )
+    opcoes = ChromeOptions()
+    opcoes.binary_location = str(edge_exe)
+    opcoes.set_capability("acceptInsecureCerts", True)
+    opcoes.add_experimental_option("prefs", prefs_download(pasta_downloads))
     opcoes.add_argument("--start-maximized")
+    log(f"Usando chromedriver {chrome_drv.name} com Edge em {edge_exe}")
+    servico = ChromeService(
+        executable_path=str(chrome_drv),
+        service_args=["--disable-build-check"],
+    )
+    return webdriver.Chrome(service=servico, options=opcoes)
+
+
+def criar_driver(pasta_downloads: Path):
+    edge_exe = achar_msedge()
+    ver = versao_exe_windows(edge_exe) if edge_exe else None
+    major = 0
+    if ver:
+        try:
+            major = int(ver.split(".")[0])
+        except ValueError:
+            major = 0
+        log(f"Microsoft Edge {ver} ({edge_exe})")
+
+    # A Claro esta no Edge 112; o msedgedriver empacotado e 115+ e recusa essa versao.
+    if edge_exe and (major == 0 or major <= 114):
+        return criar_driver_via_chromedriver(pasta_downloads, edge_exe)
+
+    opcoes = webdriver.EdgeOptions()
+    opcoes.set_capability("acceptInsecureCerts", True)
+    opcoes.add_experimental_option("prefs", prefs_download(pasta_downloads))
+    opcoes.add_argument("--start-maximized")
+    if edge_exe:
+        opcoes.binary_location = str(edge_exe)
 
     driver_path = achar_msedgedriver()
     if driver_path is None:
+        if edge_exe:
+            log("msedgedriver nao encontrado; tentando chromedriver + Edge...")
+            return criar_driver_via_chromedriver(pasta_downloads, edge_exe)
         raise RuntimeError(
-            "Nao encontrei msedgedriver.exe (o Selenium nao consegue baixa-lo "
-            "porque a rede bloqueia o download). Confira se existe "
-            "vendor\\drivers\\msedgedriver.exe no projeto (git pull)."
+            "Nao encontrei msedgedriver.exe nem o Edge. "
+            "Confira vendor\\drivers\\ apos o git pull."
         )
     log(f"Usando msedgedriver: {driver_path}")
     servico = Service(executable_path=str(driver_path))
-    return webdriver.Edge(service=servico, options=opcoes)
+    try:
+        return webdriver.Edge(service=servico, options=opcoes)
+    except Exception as exc:
+        msg = str(exc).lower()
+        if edge_exe and ("session not created" in msg or "only supports" in msg):
+            log(f"msedgedriver incompativel com este Edge ({exc}); tentando chromedriver...")
+            return criar_driver_via_chromedriver(pasta_downloads, edge_exe)
+        raise
 
 
 def achar_elemento(driver, chave_seletor: str, timeout: int = 20, clicavel: bool = True):
