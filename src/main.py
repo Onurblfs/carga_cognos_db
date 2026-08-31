@@ -11,6 +11,7 @@ Uso:
 import argparse
 import logging
 import sys
+from datetime import datetime
 
 import pandas as pd
 
@@ -54,6 +55,10 @@ def processar_fonte(fonte: Fonte, config, config_att, engine) -> int:
     logger.info("Linhas lidas: %d | Colunas: %d", len(df), len(df.columns))
     if df.empty:
         raise RuntimeError(f"O arquivo {arquivo.name} nao contem dados.")
+
+    # Colunas de auditoria da carga no DWH
+    df["dt_carga"] = datetime.now()
+    df["arquivo_origem"] = arquivo.name
 
     return carregar_dataframe(
         engine=engine,

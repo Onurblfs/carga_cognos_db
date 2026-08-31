@@ -86,6 +86,19 @@ com "Iniciar em" = pasta do projeto.
 
 ## Detalhes da carga
 
+- **Cada extracao vira uma tabela no DWH** (mapeamento no `config/fontes.yaml`):
+
+| Extracao | Tabela |
+|---|---|
+| Receitas (IRAT.950) | `tb_irat950_receita` |
+| Fisicos (FIS.900) | `tb_fis900_fisico` |
+| Custos (IRAT.950 Custo) | `tb_irat950_custo` |
+| Abertura da Receita / Waterfall (REV.900) | `tb_rev900_receita_abertura` |
+| Pre-Pago Parte 1 (CTS.100) | `tb_cts100_prepago` |
+| Pre-Pago Parte 2 (REV.420) | `tb_rev420_prepago` |
+
+- Cada tabela recebe duas colunas de auditoria: `dt_carga` (data/hora da
+  carga) e `arquivo_origem` (nome do Excel de origem).
 - Os nomes das colunas sao normalizados (minusculas, sem acento, `_` no lugar
   de espacos) para ficarem amigaveis ao banco.
 - Linhas e colunas totalmente vazias do Excel sao descartadas.
