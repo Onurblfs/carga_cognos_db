@@ -1,11 +1,9 @@
-"""Fluxo completo: baixa as bases do Planning Analytics (via automacao do
-att_cognos_pbi) e grava os dados em banco de dados.
+"""Fluxo completo: baixa as bases do Cognos (Planning Analytics) e grava no DWH.
 
 Uso:
     python -m src.main                        # baixa tudo e grava no banco
     python -m src.main --fonte "Receitas (IRAT.950)"   # apenas uma fonte
     python -m src.main --sem-baixar           # so grava arquivos ja baixados
-    python -m src.main --sem-mover            # baixa sem copiar para a rede
 """
 
 from __future__ import annotations
@@ -19,7 +17,7 @@ import pandas as pd
 
 from src.att_cognos import (
     buscar_job,
-    carregar_config_att,
+    carregar_config_cognos,
     executar_download,
     localizar_arquivo,
 )
@@ -47,11 +45,11 @@ def ler_excel(caminho, fonte: Fonte) -> pd.DataFrame:
     return df
 
 
-def processar_fonte(fonte: Fonte, config, config_att, carga: CargaOracle) -> int:
+def processar_fonte(fonte: Fonte, config, config_cognos, carga: CargaOracle) -> int:
     logger.info("=== Fonte: %s ===", fonte.nome)
 
-    job = buscar_job(config_att, fonte.nome)
-    arquivo = localizar_arquivo(config.pasta_att, config_att, job)
+    job = buscar_job(config_cognos, fonte.nome)
+    arquivo = localizar_arquivo(config_cognos, job)
 
     df = ler_excel(arquivo, fonte)
     logger.info("Linhas lidas: %d | Colunas: %d", len(df), len(df.columns))
@@ -81,17 +79,12 @@ def main() -> int:
         help="Nao executa o download; carrega os arquivos ja existentes",
     )
     parser.add_argument(
-        "--sem-mover",
-        action="store_true",
-        help="Repassa --sem-mover ao baixar_cognos.py (nao copia para a rede)",
-    )
-    parser.add_argument(
         "--config", default=None, help="Caminho alternativo do fontes.yaml"
     )
     args = parser.parse_args()
 
     config = carregar_config(args.config)
-    config_att = carregar_config_att(config.pasta_att)
+    config_cognos = carregar_config_cognos()
 
     fontes = config.fontes
     if args.fonte:
@@ -102,14 +95,10 @@ def main() -> int:
 
     # Valida o cadastro antes de gastar tempo com download
     for fonte in fontes:
-        buscar_job(config_att, fonte.nome)
+        buscar_job(config_cognos, fonte.nome)
 
     if not args.sem_baixar:
-        executar_download(
-            config.pasta_att,
-            somente=[f.nome for f in fontes],
-            sem_mover=args.sem_mover,
-        )
+        executar_download(somente=[f.nome for f in fontes], sem_mover=True)
 
     usuario, senha = ler_credenciais(
         config.arquivo_credenciais,
@@ -124,7 +113,7 @@ def main() -> int:
     sucesso, falhas = 0, []
     for fonte in fontes:
         try:
-            processar_fonte(fonte, config, config_att, carga)
+            processar_fonte(fonte, config, config_cognos, carga)
             sucesso += 1
         except Exception:
             logger.exception("Falha ao processar a fonte '%s'.", fonte.nome)

@@ -11,6 +11,9 @@ venv/
 
 # Arquivos baixados do Cognos
 downloads/
+backup/
+debug/
+painel_status.json
 *.csv
 *.xlsx
 *.xls

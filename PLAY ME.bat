@@ -52,8 +52,8 @@ if not exist ".env" (
     copy /y ".env.example" ".env" >nul
     echo ------------------------------------------------------------------------
     echo   PRIMEIRA EXECUCAO: o arquivo .env foi criado a partir do modelo.
-    echo   Confira/ajuste os valores ^(pasta do att_cognos_pbi, DSN, schema,
-    echo   caminho do DB_acess.xlsx^) no Bloco de Notas que vai abrir agora.
+    echo   Confira/ajuste DSN, schema e o caminho do DB_acess.xlsx
+    echo   no Bloco de Notas que vai abrir agora.
     echo   Depois salve, feche e rode o PLAY ME de novo.
     echo ------------------------------------------------------------------------
     start /wait notepad ".env"
@@ -67,11 +67,9 @@ if not exist ".env" (
 )
 
 REM ----- Verifica se as bibliotecas ja existem -----
-REM Em maquinas onde o Scrip_carga_banco ja roda, tudo ja esta instalado
-REM (pandas, PyYAML e openpyxl vem com o Anaconda; cx_Oracle/oracledb idem).
-echo Verificando bibliotecas ^(pandas, PyYAML, openpyxl, driver Oracle^)...
+echo Verificando bibliotecas ^(pandas, PyYAML, openpyxl, selenium, driver Oracle^)...
 set "LIBS_OK="
-"%PYTHON%" -c "import importlib.util as u, sys; sys.exit(0 if all(u.find_spec(m) for m in ['pandas','yaml','openpyxl']) and (u.find_spec('oracledb') or u.find_spec('cx_Oracle')) else 1)" >nul 2>&1 && set "LIBS_OK=1"
+"%PYTHON%" -c "import importlib.util as u, sys; sys.exit(0 if all(u.find_spec(m) for m in ['pandas','yaml','openpyxl','selenium']) and (u.find_spec('oracledb') or u.find_spec('cx_Oracle')) else 1)" >nul 2>&1 && set "LIBS_OK=1"
 
 if defined LIBS_OK (
   echo Bibliotecas OK ^(ja instaladas^).
@@ -90,13 +88,8 @@ echo.
 echo [ERRO] Nao foi possivel instalar as bibliotecas automaticamente
 echo        ^(a rede da empresa bloqueia o acesso direto ao pypi.org^).
 echo.
-echo Como o Scrip_carga_banco ja roda nesta maquina, provavelmente so falta
-echo o driver Oracle. Abra o "Anaconda Prompt" pelo Menu Iniciar e rode:
-echo.
-echo    pip install --proxy http://PROXY:PORTA oracledb
-echo.
-echo ^(troque PROXY:PORTA pelo proxy da Claro^) ou, se preferir:
-echo    conda install -c conda-forge oracledb
+echo Abra o "Anaconda Prompt" pelo Menu Iniciar e rode o que faltar:
+echo    pip install --proxy http://PROXY:PORTA oracledb selenium
 echo.
 echo Depois rode este PLAY ME de novo.
 pause
@@ -109,12 +102,11 @@ echo Bibliotecas instaladas com sucesso.
 echo.
 echo ------------------------------------------------------------------------
 echo   Iniciando: download do Cognos + carga no DWH
-echo   ^(os Excel ficam em downloads\ do att_cognos_pbi; nada e copiado
-echo    para a pasta de rede^)
+echo   ^(os Excel ficam na pasta downloads\ deste projeto^)
 echo ------------------------------------------------------------------------
 echo.
 
-"%PYTHON%" -u -m src.main --sem-mover
+"%PYTHON%" -u -m src.main
 set "RC=%ERRORLEVEL%"
 
 echo.

@@ -1,0 +1,66 @@
+{
+  "url": "https://cbl2am91954.corp.clarobr:9443/?perspective=pa-home",
+  "arquivo_credenciais": "C:\\Users\\N5919189\\OneDrive - Claro SA\\Área de Trabalho\\acess.txt",
+  "pasta_downloads": "downloads",
+  "pasta_backup": "backup",
+  "timeout_login_segundos": 300,
+  "timeout_download_segundos": 600,
+  "timeout_dashboard_segundos": 120,
+  "tempo_estimado_por_exportacao_segundos": 180,
+  "exportacoes": [
+    {
+      "nome": "Receitas (IRAT.950)",
+      "servidor": "Sdata ACOMPANHAMENTO",
+      "cubo": "iRAT.950.DRE",
+      "nome_busca": "Receita DRE PowerBI V2 (irat950)",
+      "dashboard_id": "ed603f59-a5a5-4586-a44f-477a79e8b2dc",
+      "pasta_destino": "\\\\10.29.2.2\\Planejamento\\Planejamento e Controle\\00_Simulador Receita\\ANALITICOS MOVEL\\FORECAST IRAT.950 + FIS.900\\IRAT.950",
+      "nome_arquivo_destino": "Receita DRE PowerBI V2 (irat950).xlsx"
+    },
+    {
+      "nome": "Fisicos (FIS.900)",
+      "servidor": "Sdata ACOMPANHAMENTO",
+      "cubo": "IFIS.900",
+      "nome_busca": "Fisico Receita - FIS 900 (Power BI)",
+      "dashboard_id": "5f46efed-d3f0-4e40-a568-ea6df650c883",
+      "pasta_destino": "\\\\10.29.2.2\\Planejamento\\Planejamento e Controle\\00_Simulador Receita\\ANALITICOS MOVEL\\FORECAST IRAT.950 + FIS.900\\FIS.900",
+      "nome_arquivo_destino": "Fisico Receita - FIS 900 (Power BI).xlsx"
+    },
+    {
+      "nome": "Custos (IRAT.950 Custo)",
+      "servidor": "Sdata ACOMPANHAMENTO",
+      "cubo": "iRAT.950.DRE",
+      "nome_busca": "Receita DRE PowerBI V2 (irat950) CUSTO",
+      "dashboard_id": "7d6a9c64-3797-472a-9577-59b5d0ddcf72",
+      "pasta_destino": "\\\\10.29.2.2\\Planejamento\\Planejamento e Controle\\00_Simulador Receita\\ANALITICOS MOVEL\\FORECAST IRAT.950 + FIS.900\\IRAT.950_Custo",
+      "nome_arquivo_destino": "Receita DRE PowerBI V2 (irat950) CUSTO.xlsx"
+    },
+    {
+      "nome": "Abertura da Receita / Waterfall (REV.900)",
+      "servidor": "NET_PLAN_UF",
+      "cubo": "REV.900.Receita_Consolidada_DRE",
+      "nome_busca": "REV.900.Receita_Consolidada_DRE Power BI",
+      "dashboard_id": "7d143553-51ec-42b1-9f89-3e8466247182",
+      "pasta_destino": "\\\\10.29.2.2\\Planejamento\\Planejamento e Controle\\00_Simulador Receita\\ANALITICOS MOVEL\\FORECAST IRAT.950 + FIS.900\\REC.900 - Receita Abertura (PROVISORIO)",
+      "nome_arquivo_destino": "REV.900.Receita_Consolidada_DRE Power BI.xlsx"
+    },
+    {
+      "nome": "Pre-Pago Parte 1 (CTS.100)",
+      "servidor": "NET_PLAN_UF",
+      "cubo": "CTS.100",
+      "nome_busca": "CTS.100 (Power BI)",
+      "dashboard_id": null,
+      "pasta_destino": "\\\\10.29.2.2\\Planejamento\\Planejamento e Controle\\00_Simulador Receita\\ANALITICOS MOVEL\\FORECAST IRAT.950 + FIS.900\\CTS.100",
+      "nome_arquivo_destino": "CTS.100 (Power BI).xlsx"
+    },
+    {
+      "nome": "Pre-Pago Parte 2 (REV.420)",
+      "servidor": "NET_PLAN_UF",
+      "cubo": "REV.420",
+      "nome_busca": "REV.420 Power BI",
+      "dashboard_id": null,
+      "pasta_destino": "\\\\10.29.2.2\\Planejamento\\Planejamento e Controle\\00_Simulador Receita\\ANALITICOS MOVEL\\FORECAST IRAT.950 + FIS.900\\REV.420",
+      "nome_arquivo_destino": "REV.420 Power BI.xlsx"
+    }
+  ]
+}

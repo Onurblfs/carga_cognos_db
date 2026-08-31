@@ -35,7 +35,7 @@ class Fonte:
     """Uma exportacao do Planning Analytics e sua tabela de destino no DWH.
 
     O campo 'nome' deve ser IGUAL ao campo 'nome' da exportacao no
-    config.json do att_cognos_pbi (ex.: "Receitas (IRAT.950)").
+    config.json deste projeto (ex.: "Receitas (IRAT.950)").
     """
 
     nome: str
@@ -48,7 +48,6 @@ class Fonte:
 
 @dataclass
 class Config:
-    pasta_att: Path
     dsn_oracle: str
     schema_destino: str | None
     arquivo_credenciais: Path
@@ -78,15 +77,7 @@ def carregar_config(caminho_fontes: str | Path | None = None) -> Config:
     if not fontes:
         raise SystemExit(f"Nenhuma fonte cadastrada em {caminho_fontes}.")
 
-    pasta_att = Path(_obrigatoria("ATT_COGNOS_DIR"))
-    if not pasta_att.exists():
-        raise SystemExit(
-            f"Pasta da automacao att_cognos_pbi nao encontrada: {pasta_att}. "
-            "Ajuste a variavel ATT_COGNOS_DIR no .env."
-        )
-
     return Config(
-        pasta_att=pasta_att,
         dsn_oracle=_obrigatoria("DSN_ORACLE"),
         schema_destino=os.getenv("SCHEMA_DESTINO", "").strip() or None,
         arquivo_credenciais=Path(_obrigatoria("ARQUIVO_CREDENCIAIS")),

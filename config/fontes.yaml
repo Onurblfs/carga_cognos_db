@@ -3,7 +3,7 @@
 #
 # Campos:
 #   nome        : deve ser IGUAL ao campo "nome" da exportacao no
-#                 config.json do att_cognos_pbi
+#                 config.json deste projeto
 #   tabela      : nome da tabela de destino no banco
 #   schema      : schema da tabela (opcional; usa DB_SCHEMA do .env)
 #   modo_carga  : substituir -> DELETE + INSERT (mantem a estrutura)
