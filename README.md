@@ -36,7 +36,7 @@ carga_cognos_db/
 
 ### Jeito facil: duplo clique no `PLAY ME.bat`
 
-O `PLAY ME.bat` faz tudo sozinho:
+O `PLAY ME.bat` faz tudo sozinho, sem perguntas:
 
 1. localiza o Python da maquina e ativa o Anaconda (corrige o erro de SSL do pip);
 2. verifica as bibliotecas e **so instala se faltar alguma** — em maquinas
@@ -44,8 +44,9 @@ O `PLAY ME.bat` faz tudo sozinho:
    PyYAML e openpyxl vem com o Anaconda; o driver Oracle ja esta presente);
 3. na primeira execucao, cria o `.env` a partir do modelo e abre no Bloco de
    Notas para voce conferir os caminhos;
-4. mostra um menu (fluxo completo / so gravar / baixar sem copiar para a rede)
-   e executa a carga.
+4. executa direto as duas etapas: **baixa os arquivos do Cognos e grava no
+   DWH** (os Excel ficam na pasta `downloads/` do att_cognos_pbi; nada e
+   copiado para a pasta de rede).
 
 ### Jeito manual
 

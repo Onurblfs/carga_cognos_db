@@ -7,7 +7,8 @@ cd /d "%~dp0"
 echo.
 echo ========================================================================
 echo   CARGA COGNOS ^> DWH ORACLE
-echo   Baixa as bases do Planning Analytics e grava nas tabelas BI_FT_*
+echo   1. Baixa as bases do Planning Analytics ^(Cognos^)
+echo   2. Grava nas tabelas BI_FT_* do DWH
 echo ========================================================================
 echo.
 
@@ -106,52 +107,14 @@ echo Bibliotecas instaladas com sucesso.
 
 :libs_prontas
 echo.
-
-echo O que deseja fazer?
-echo.
-echo   1^) Fluxo completo  = baixa do Cognos e grava no DWH
-echo   2^) So gravar       = usa os Excel ja baixados ^(nao abre o navegador^)
-echo   3^) Baixar sem rede = baixa e grava, sem copiar para \\10.29.2.2
-echo   0^) Sair
-echo.
-set /p "ESCOPO=Opcao: "
-
-set "ARGS="
-set "DESC="
-if "%ESCOPO%"=="1" (
-  set "ARGS="
-  set "DESC=Fluxo completo: download + carga no DWH"
-) else if "%ESCOPO%"=="2" (
-  set "ARGS=--sem-baixar"
-  set "DESC=Somente carga no DWH (arquivos ja baixados)"
-) else if "%ESCOPO%"=="3" (
-  set "ARGS=--sem-mover"
-  set "DESC=Download local + carga no DWH (sem copiar para a rede)"
-) else if "%ESCOPO%"=="0" (
-  exit /b 0
-) else (
-  echo Opcao invalida. Use 0, 1, 2 ou 3.
-  pause
-  exit /b 1
-)
-
-echo.
 echo ------------------------------------------------------------------------
-echo   Executar: %DESC%
-echo   Comando:  python -m src.main %ARGS%
+echo   Iniciando: download do Cognos + carga no DWH
+echo   ^(os Excel ficam em downloads\ do att_cognos_pbi; nada e copiado
+echo    para a pasta de rede^)
 echo ------------------------------------------------------------------------
 echo.
-set /p "CONF=Confirmar e iniciar? [S/N]: "
-if /i not "%CONF%"=="S" if /i not "%CONF%"=="SIM" (
-  echo Cancelado.
-  pause
-  exit /b 0
-)
 
-echo.
-echo Executando...
-echo ------------------------------------------------------------------------
-"%PYTHON%" -u -m src.main %ARGS%
+"%PYTHON%" -u -m src.main --sem-mover
 set "RC=%ERRORLEVEL%"
 
 echo.
