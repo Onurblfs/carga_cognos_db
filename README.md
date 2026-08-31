@@ -20,6 +20,7 @@ att_cognos_pbi (Selenium)          carga_cognos_db (este projeto)
 
 ```
 carga_cognos_db/
+├── PLAY ME.bat            # duplo clique: instala as bibliotecas e roda o fluxo
 ├── config/
 │   └── fontes.yaml        # exportacao do att_cognos_pbi -> tabela do banco
 ├── src/
