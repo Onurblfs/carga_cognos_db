@@ -13,7 +13,15 @@ echo.
 
 REM ----- Localiza Python (Anaconda corporativo primeiro) -----
 set "PYTHON="
-if exist "C:\ProgramData\anaconda3\python.exe" set "PYTHON=C:\ProgramData\anaconda3\python.exe"
+set "CONDA_ACT="
+if exist "C:\ProgramData\anaconda3\python.exe" (
+  set "PYTHON=C:\ProgramData\anaconda3\python.exe"
+  set "CONDA_ACT=C:\ProgramData\anaconda3\Scripts\activate.bat"
+)
+if not defined PYTHON if exist "%USERPROFILE%\anaconda3\python.exe" (
+  set "PYTHON=%USERPROFILE%\anaconda3\python.exe"
+  set "CONDA_ACT=%USERPROFILE%\anaconda3\Scripts\activate.bat"
+)
 if not defined PYTHON if exist "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" set "PYTHON=%LOCALAPPDATA%\Programs\Python\Python312\python.exe"
 if not defined PYTHON if exist "%LOCALAPPDATA%\Programs\Python\Python311\python.exe" set "PYTHON=%LOCALAPPDATA%\Programs\Python\Python311\python.exe"
 where python >nul 2>&1 && if not defined PYTHON for /f "delims=" %%P in ('where python') do (
@@ -25,6 +33,12 @@ if not defined PYTHON (
   echo [ERRO] Python nao encontrado. Instale Anaconda/Python ou ajuste este BAT.
   pause
   exit /b 1
+)
+
+REM ----- Ativa o Anaconda (evita erro "SSL module is not available" no pip) -----
+if defined CONDA_ACT if exist "%CONDA_ACT%" (
+  echo Ativando ambiente Anaconda...
+  call "%CONDA_ACT%"
 )
 
 echo Python: %PYTHON%
@@ -51,21 +65,43 @@ if not exist ".env" (
   )
 )
 
-REM ----- Instala/atualiza as bibliotecas necessarias -----
+REM ----- Verifica se as bibliotecas ja existem (Anaconda ja traz quase todas) -----
 echo Verificando bibliotecas ^(pandas, oracledb, dotenv, PyYAML, openpyxl^)...
-"%PYTHON%" -m pip install -r requirements.txt --disable-pip-version-check -q
-if errorlevel 1 (
-  echo Tentando instalar apenas para o usuario atual ^(--user^)...
-  "%PYTHON%" -m pip install -r requirements.txt --user --disable-pip-version-check -q
-  if errorlevel 1 (
-    echo [ERRO] Nao foi possivel instalar as bibliotecas.
-    echo Verifique a conexao ^(VPN/proxy^) e tente manualmente:
-    echo    "%PYTHON%" -m pip install -r requirements.txt
-    pause
-    exit /b 1
-  )
+set "LIBS_OK="
+"%PYTHON%" -c "import importlib.util as u, sys; sys.exit(0 if all(u.find_spec(m) for m in ['pandas','yaml','dotenv','openpyxl']) and (u.find_spec('oracledb') or u.find_spec('cx_Oracle')) else 1)" >nul 2>&1 && set "LIBS_OK=1"
+
+if defined LIBS_OK (
+  echo Bibliotecas OK ^(ja instaladas^).
+  goto :libs_prontas
 )
-echo Bibliotecas OK.
+
+echo Instalando as bibliotecas que faltam...
+"%PYTHON%" -m pip install -r requirements.txt --disable-pip-version-check -q
+if not errorlevel 1 goto :libs_instaladas
+
+echo Tentando instalar apenas para o usuario atual ^(--user^)...
+"%PYTHON%" -m pip install -r requirements.txt --user --disable-pip-version-check -q
+if not errorlevel 1 goto :libs_instaladas
+
+echo.
+echo [ERRO] Nao foi possivel instalar as bibliotecas automaticamente.
+echo.
+echo Faca o seguinte: abra o "Anaconda Prompt" pelo Menu Iniciar e rode:
+echo.
+echo    pip install oracledb python-dotenv
+echo.
+echo ^(pandas, PyYAML e openpyxl ja vem com o Anaconda^)
+echo Se a rede bloquear, tente com o proxy da empresa:
+echo    pip install --proxy http://PROXY:PORTA oracledb python-dotenv
+echo.
+echo Depois rode este PLAY ME de novo.
+pause
+exit /b 1
+
+:libs_instaladas
+echo Bibliotecas instaladas com sucesso.
+
+:libs_prontas
 echo.
 
 echo O que deseja fazer?
