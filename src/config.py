@@ -1,0 +1,121 @@
+"""Carrega as configuracoes do .env e do config/fontes.yaml."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from pathlib import Path
+
+import yaml
+
+RAIZ_PROJETO = Path(__file__).resolve().parent.parent
+
+
+def _carregar_env(caminho: Path) -> None:
+    """Le o arquivo .env sem depender da biblioteca python-dotenv
+    (que nao vem com o Anaconda e pode nao instalar em rede restrita)."""
+    if not caminho.exists():
+        return
+    for linha in caminho.read_text(encoding="utf-8-sig").splitlines():
+        linha = linha.strip()
+        if not linha or linha.startswith("#") or "=" not in linha:
+            continue
+        chave, _, valor = linha.partition("=")
+        chave = chave.strip()
+        valor = valor.strip().strip('"').strip("'")
+        if chave:
+            os.environ.setdefault(chave, valor)
+
+
+_carregar_env(RAIZ_PROJETO / ".env")
+
+
+@dataclass
+class Fonte:
+    """Uma exportacao do Planning Analytics e sua tabela de destino no DWH.
+
+    O campo 'nome' deve ser IGUAL ao campo 'nome' da exportacao no
+    config.json deste projeto (ex.: "Receitas (IRAT.950)").
+    """
+
+    nome: str
+    tabela: str
+    schema: str | None = None
+    modo_carga: str = "substituir"
+    aba: str | int = 0          # nome ou indice da aba do Excel
+    linhas_pular: int = 0       # linhas de cabecalho/contexto a pular
+
+
+@dataclass
+class Config:
+    dsn_oracle: str
+    schema_destino: str | None
+    arquivo_credenciais: Path
+    aba_credenciais: str
+    coluna_usuario: str
+    coluna_senha: str
+    fontes: list[Fonte]
+
+
+def _obrigatoria(nome_var: str) -> str:
+    valor = os.getenv(nome_var, "").strip()
+    if not valor:
+        raise SystemExit(
+            f"Variavel de ambiente obrigatoria nao definida: {nome_var}. "
+            "Copie o .env.example para .env e preencha os valores."
+        )
+    return valor
+
+
+def achar_planilha_oracle(caminho_env: str) -> Path:
+    """Usa o caminho do .env; se nao existir, procura DB_acess.xlsx na Area de Trabalho."""
+    candidatos = [Path(caminho_env)]
+    home = Path.home()
+    nomes = ("DB_acess.xlsx", "DB_access.xlsx", "DB_acess.xls", "acess.xlsx")
+    pastas = [
+        home / "Desktop",
+        home / "Área de Trabalho",
+        home / "Documents",
+        home / "Documentos",
+        home / "OneDrive - Claro SA" / "Desktop",
+        home / "OneDrive - Claro SA" / "Área de Trabalho",
+        home / "OneDrive - Claro SA" / "Documents",
+    ]
+    try:
+        pastas.extend(home.glob("OneDrive*/Desktop"))
+        pastas.extend(home.glob("OneDrive*/Área de Trabalho"))
+        pastas.extend(home.glob("OneDrive*/Documents"))
+    except Exception:
+        pass
+    for pasta in pastas:
+        for nome in nomes:
+            candidatos.append(Path(pasta) / nome)
+
+    for caminho in candidatos:
+        try:
+            if caminho.is_file():
+                return caminho
+        except OSError:
+            continue
+    return Path(caminho_env)
+
+
+def carregar_config(caminho_fontes: str | Path | None = None) -> Config:
+    caminho_fontes = Path(caminho_fontes or RAIZ_PROJETO / "config" / "fontes.yaml")
+
+    with open(caminho_fontes, encoding="utf-8") as arq:
+        dados = yaml.safe_load(arq) or {}
+
+    fontes = [Fonte(**item) for item in dados.get("fontes", [])]
+    if not fontes:
+        raise SystemExit(f"Nenhuma fonte cadastrada em {caminho_fontes}.")
+
+    return Config(
+        dsn_oracle=_obrigatoria("DSN_ORACLE"),
+        schema_destino=os.getenv("SCHEMA_DESTINO", "").strip() or None,
+        arquivo_credenciais=achar_planilha_oracle(_obrigatoria("ARQUIVO_CREDENCIAIS")),
+        aba_credenciais=os.getenv("ABA_CREDENCIAIS", "Plan1").strip() or "Plan1",
+        coluna_usuario=os.getenv("COLUNA_USUARIO", "user_dw2").strip() or "user_dw2",
+        coluna_senha=os.getenv("COLUNA_SENHA", "pass_dw2").strip() or "pass_dw2",
+        fontes=fontes,
+    )

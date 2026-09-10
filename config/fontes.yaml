@@ -1,0 +1,40 @@
+# ============================================================
+# Mapeia cada exportacao do att_cognos_pbi para uma tabela do banco.
+#
+# Campos:
+#   nome        : deve ser IGUAL ao campo "nome" da exportacao no
+#                 config.json deste projeto
+#   tabela      : nome da tabela de destino no banco
+#   schema      : schema da tabela (opcional; usa DB_SCHEMA do .env)
+#   modo_carga  : substituir -> DELETE + INSERT (mantem a estrutura)
+#                 recriar    -> DROP + CREATE (estrutura inferida dos dados)
+#                 anexar     -> apenas INSERT (acumula historico)
+#   aba         : nome ou indice da aba do Excel (padrao: 0 = primeira)
+#   linhas_pular: linhas de titulo/contexto a pular antes do cabecalho
+#                 (ajuste na primeira execucao olhando o Excel exportado)
+# ============================================================
+
+fontes:
+  - nome: "Receitas (IRAT.950)"
+    tabela: BI_FT_IRAT950_RECEITA
+    modo_carga: substituir
+    aba: 0
+    linhas_pular: 0
+
+  - nome: "Fisicos (FIS.900)"
+    tabela: BI_FT_FIS900_FISICO
+    modo_carga: substituir
+    aba: 0
+    linhas_pular: 0
+
+  - nome: "Custos (IRAT.950 Custo)"
+    tabela: BI_FT_IRAT950_CUSTO
+    modo_carga: substituir
+    aba: 0
+    linhas_pular: 0
+
+  - nome: "Abertura da Receita / Waterfall (REV.900)"
+    tabela: BI_FT_REV900_RECEITA_ABERTURA
+    modo_carga: substituir
+    aba: 0
+    linhas_pular: 0
